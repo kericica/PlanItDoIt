@@ -1,0 +1,94 @@
+# ---OS---
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+# Linux
+.directory
+
+
+# ---IDE---
+
+# VSC
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+
+# ---Java/Maven---
+
+# Maven build output
+backend/target/
+
+# Java compiled files
+*.class
+
+# Logs
+*.log
+
+# JVM crash logs
+hs_err_pid*
+
+# Spring Boot generated files
+spring.log
+
+
+# ---Node/Angular---
+
+# Dependencies
+frontend/node_modules/
+
+# Angular build output
+frontend/dist/
+
+# Angular cache
+frontend/.angular/
+
+# npm logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# Environment-specific Angular files
+frontend/src/environments/environment.local.ts
+
+
+# ---Env/Secrets---
+
+.env
+.env.*
+!.env.example
+
+# Spring local configuration
+backend/src/main/resources/application-local.properties
+backend/src/main/resources/application-local.yml
+
+# Local secrets
+*.pem
+*.key
+*.crt
+
+
+# ---Coverage/Testing---
+
+coverage/
+frontend/coverage/
+backend/target/site/
+
+
+# ---Temporary files---
+
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
