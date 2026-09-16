@@ -8,6 +8,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -21,12 +23,26 @@ public class Task{
 
     private String title;
     private String note;
+
+    @Column(name="solution_difficulty")
+    @Convert(converter=SolutionDifficultyConverter.class)
     private SolutionDifficulty solutionDifficulty;
+
+    @Column(name="time_difficulty")
+    @Convert(converter=TimeDifficultyConverter.class)
     private TimeDifficulty timeDifficulty;
+
     private Boolean highlighted;
     private LocalDate deadline;
+
+    @Column(name="status")
+    @Convert(converter=TaskStatusConverter.class)
     private TaskStatus taskStatus;
+    
+    @Column(name="created_at")
     private Instant createdAt;
+
+    @Column(name="completed_at")
     private Instant completedAt;
 
     @ManyToOne
