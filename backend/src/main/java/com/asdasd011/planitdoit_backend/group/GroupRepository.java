@@ -7,5 +7,5 @@ import java.util.Optional;
 
 public interface GroupRepository extends JpaRepository<Group, Long>{
     List<Group> findByUserId(Long userId);
-    Oprional<Group> findByIdAndUserId(Long id,Long userId);
+    Optional<Group> findByIdAndUserId(Long id,Long userId);
 }

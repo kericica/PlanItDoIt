@@ -1,9 +1,10 @@
 package com.asdasd011.planitdoit_backend.group;
 
 import com.asdasd011.planitdoit_backend.group.dto.GroupResponse;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.asdasd011.planitdoit_backend.group.dto.CreateGroupRequest;
+import com.asdasd011.planitdoit_backend.group.dto.UpdateGroupRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -16,4 +17,18 @@ public class GroupController{
 
     @GetMapping
     public List<GroupResponse> getGroups(){return groupService.getGroupsForUser(1L);}
+
+    @GetMapping("/{groupId}")
+    public GroupResponse getGroup(@PathVariable Long groupId) {return groupService.getGroupForUser(1L,groupId);}
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public GroupResponse createGroup(@RequestBody CreateGroupRequest request){return groupService.createGroup(1L,request);}
+
+    @PutMapping("/{groupId}")
+    public GroupResponse updateGroup(@PathVariable Long groupId,@RequestBody UpdateGroupRequest request){return groupService.updateGroup(1L,groupId,request);}
+
+    @DeleteMapping("/{groupId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteGroup(@PathVariable Long groupId){groupService.deleteGroup(1L,groupId);}
 }
