@@ -68,7 +68,7 @@ public class Task{
     public void setHighlighted(Boolean highlighted){this.highlighted=highlighted;}
 
     public LocalDate getDeadline(){return deadline;}
-    public void setDeadlinde(LocalDate deadline){this.deadline=deadline;}
+    public void setDeadline(LocalDate deadline){this.deadline=deadline;}
 
     public TaskStatus getTaskStatus(){return taskStatus;}
     public void setTaskStatus(TaskStatus taskStatus){this.taskStatus=taskStatus;}
