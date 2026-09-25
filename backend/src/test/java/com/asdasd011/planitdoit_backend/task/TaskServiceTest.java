@@ -18,6 +18,8 @@ import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.ArgumentMatchers.any;
@@ -155,6 +157,105 @@ class TaskServiceTest{
         assertEquals(100L,result.id());
         assertEquals("TaskTitle1",result.title());
         assertEquals(TaskStatus.IN_PROGRESS,result.taskStatus());
+    }
+
+    @Test
+    void shouldDefaultNewTaskToTodo(){
+        User user=createUser();
+        Group group=createGroup(user);
+
+        var request= new CreateTaskRequest("StatusTest",null,SolutionDifficulty.EASY,TimeDifficulty.FLASH,false,null,null,10L);
+
+        when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
+        when(taskRepository.save(any(Task.class))).thenAnswer(invocation->invocation.getArgument(0));
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+        var result=taskService.createTask(1L,10L,request);
+
+        assertEquals(TaskStatus.TODO,result.taskStatus());
+        assertNull(result.completedAt());
+    }
+
+    @Test
+    void shouldSetCompletedAtWhenCreatingCompletedTask(){
+        User user=createUser();
+        Group group=createGroup(user);
+
+        var request=new CreateTaskRequest("CompletedStatusTest",null,SolutionDifficulty.EASY,TimeDifficulty.FLASH,false,null,TaskStatus.COMPLETED,10L);
+
+        when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
+        when(taskRepository.save(any(Task.class))).thenAnswer(invocation->invocation.getArgument(0));
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+        var result=taskService.createTask(1L,10L,request);
+
+        assertEquals(TaskStatus.COMPLETED,result.taskStatus());
+        assertNotNull(result.completedAt());
+    }
+
+    @Test
+    void shouldSetCompletedAtWhenTaskBecomesCompleted(){
+        User user=createUser();
+        Group group=createGroup(user);
+        Task task=createTask(group);
+        task.setTaskStatus(TaskStatus.IN_PROGRESS);
+        task.setCompletedAt(null);
+
+        var request=new UpdateTaskRequest(task.getTitle(),task.getNote(),task.getSolutionDifficulty(),task.getTimeDifficulty(),task.isHighlighted(),task.getDeadline(),TaskStatus.COMPLETED);
+
+        when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
+        when(taskRepository.findByIdAndGroupId(100L,10L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(task)).thenReturn(task);
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+        var result=taskService.updateTask(1L,10L,100L,request);
+
+        assertEquals(TaskStatus.COMPLETED,result.taskStatus());
+        assertNotNull(result.completedAt());
+    }
+
+    @Test
+    void shouldClearCompletedAtWhenTaskLeavesCompleted(){
+        User user=createUser();
+        Group group=createGroup(user);
+        Task task=createTask(group);
+        Instant completedAt=Instant.parse("2026-09-24T10:00:00Z");
+        task.setTaskStatus(TaskStatus.COMPLETED);
+        task.setCompletedAt(completedAt);
+
+        var request=new UpdateTaskRequest(task.getTitle(),task.getNote(),task.getSolutionDifficulty(),task.getTimeDifficulty(),task.isHighlighted(),task.getDeadline(),TaskStatus.IN_PROGRESS);
+
+        when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
+        when(taskRepository.findByIdAndGroupId(100L,10L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(task)).thenReturn(task);
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+        var result=taskService.updateTask(1L,10L,100L,request);
+
+        assertEquals(TaskStatus.IN_PROGRESS,result.taskStatus());
+        assertNull(result.completedAt());
+    }
+
+    @Test
+    void shouldKeepCompletedAtWhenTaskRemainsCompleted(){
+        User user=createUser();
+        Group group=createGroup(user);
+        Task task=createTask(group);
+        Instant completedAt=Instant.parse("2026-09-24T10:00:00Z");
+        task.setTaskStatus(TaskStatus.COMPLETED);
+        task.setCompletedAt(completedAt);
+
+        var request=new UpdateTaskRequest("UpdatedTitleStatusTest",task.getNote(),task.getSolutionDifficulty(),task.getTimeDifficulty(),task.isHighlighted(),task.getDeadline(),TaskStatus.COMPLETED);
+
+        when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
+        when(taskRepository.findByIdAndGroupId(100L,10L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(task)).thenReturn(task);
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+        var result=taskService.updateTask(1L,10L,100L,request);
+
+        assertEquals(TaskStatus.COMPLETED,result.taskStatus());
+        assertEquals(completedAt,result.completedAt());
     }
 
     @Test

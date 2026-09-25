@@ -41,9 +41,8 @@ public class TaskService{
         task.setTimeDifficulty(request.timeDifficulty());
         task.setHighlighted(request.highlighted());
         task.setDeadline(request.deadline());
-        task.setTaskStatus(request.taskStatus());
         task.setCreatedAt(Instant.now());
-        task.setCompletedAt(null);
+        applyStatus(task,request.taskStatus());
         task.setGroup(group);
 
         Task savedTask=taskRepository.save(task);
@@ -59,7 +58,7 @@ public class TaskService{
         task.setTimeDifficulty(request.timeDifficulty());
         task.setHighlighted(request.highlighted());
         task.setDeadline(request.deadline());
-        task.setTaskStatus(request.taskStatus());
+        applyStatus(task,request.taskStatus());
 
         Task updatedTask=taskRepository.save(task);
         return toResponse(updatedTask);
@@ -69,6 +68,14 @@ public class TaskService{
         getUserGroup(userId,groupId);
         Task task=taskRepository.findByIdAndGroupId(taskId,groupId).orElseThrow(()->new ResourceNotFoundException("task not found"));
         taskRepository.delete(task);
+    }
+
+    private void applyStatus(Task task,TaskStatus newStatus){
+        TaskStatus effectiveStatus=newStatus!=null?newStatus:TaskStatus.TODO;
+        TaskStatus previousStatus=task.getTaskStatus();
+        task.setTaskStatus(effectiveStatus);
+        if(effectiveStatus==TaskStatus.COMPLETED&&previousStatus!=TaskStatus.COMPLETED)task.setCompletedAt(Instant.now());
+        else if(effectiveStatus!=TaskStatus.COMPLETED)task.setCompletedAt(null);
     }
 
     private Group getUserGroup(Long userId,Long groupId){return groupRepository.findByIdAndUserId(groupId,userId).orElseThrow(()->new ResourceNotFoundException("group not found"));}

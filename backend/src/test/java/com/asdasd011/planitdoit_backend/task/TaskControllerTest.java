@@ -12,6 +12,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.time.Instant;
 
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -89,6 +90,45 @@ class TaskControllerTest {
             }
             """)).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(100)).andExpect(jsonPath("$.title").value("TaskTitle1")).andExpect(jsonPath("$.solutionDifficulty").value("HARD"))
             .andExpect(jsonPath("$.taskStatus").value("IN_PROGRESS")).andExpect(jsonPath("$.groupId").value(10));
+    }
+
+    @Test
+    void shouldCreateCompletedTaskWithCompletedAt()throws Exception{
+        Instant completedAt=Instant.parse("2026-09-24T10:00:00Z");
+
+        when(taskService.createTask(1L,10L,new CreateTaskRequest("StatusTest TaskTitle","completed status-time con",SolutionDifficulty.HARD,TimeDifficulty.LOT,true,null,
+            TaskStatus.COMPLETED,10L))).thenReturn(new TaskResponse(100L,"StatusTest TaskTitle","completed status-time con",SolutionDifficulty.HARD,TimeDifficulty.LOT,true,null,
+            TaskStatus.COMPLETED,null,completedAt,10L));
+
+        mockMvc.perform(post("/api/groups/10/tasks").contentType(MediaType.APPLICATION_JSON).content("""
+            {
+                "title": "StatusTest TaskTitle",
+                "note": "completed status-time con",
+                "solutionDifficulty": "HARD",
+                "timeDifficulty": "LOT",
+                "highlighted": true,
+                "taskStatus": "COMPLETED",
+                "groupId": 10
+            }
+            """)).andExpect(status().isCreated()).andExpect(jsonPath("$.taskStatus").value("COMPLETED")).andExpect(jsonPath("$.completedAt").value("2026-09-24T10:00:00Z"));
+    }
+
+    @Test
+    void shouldClearCompletedAtWhenTaskIsNoLongerCompleted()throws Exception{
+        when(taskService.updateTask(1L,10L,100L,new UpdateTaskRequest("UpdatedStatus TaskTitle","updated note",SolutionDifficulty.MID,TimeDifficulty.MID,false,null,
+            TaskStatus.IN_PROGRESS))).thenReturn(new TaskResponse(100L,"UpdatedStatus TaskTitle","updated note",SolutionDifficulty.MID,TimeDifficulty.MID,false,null,
+            TaskStatus.IN_PROGRESS,null,null,10L));
+
+        mockMvc.perform(put("/api/groups/10/tasks/100").contentType(MediaType.APPLICATION_JSON).content("""
+            {
+                "title": "UpdatedStatus TaskTitle",
+                "note": "updated note",
+                "solutionDifficulty": "MID",
+                "timeDifficulty": "MID",
+                "highlighted": false,
+                "taskStatus": "IN_PROGRESS"
+            }
+            """)).andExpect(status().isOk()).andExpect(jsonPath("$.taskStatus").value("IN_PROGRESS")).andExpect(jsonPath("$.completedAt").doesNotExist());
     }
 
     @Test
