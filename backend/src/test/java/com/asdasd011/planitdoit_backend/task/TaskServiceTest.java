@@ -141,7 +141,8 @@ class TaskServiceTest{
         User user=createUser();
         Group group=createGroup(user);
         Task task=createTask(group);
-        var request=new UpdateTaskRequest("TaskTitle1","exercises 11-20",SolutionDifficulty.HARD,TimeDifficulty.LOT,false,LocalDate.of(2026,10,5),TaskStatus.IN_PROGRESS);
+        var request=new UpdateTaskRequest("TaskTitle1","exercises 11-20",SolutionDifficulty.HARD,TimeDifficulty.LOT,false,LocalDate.of(2026,10,5),
+            TaskStatus.IN_PROGRESS,10L);
 
         when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
         when(taskRepository.findByIdAndGroupId(100L,10L)).thenReturn(Optional.of(task));
@@ -160,6 +161,35 @@ class TaskServiceTest{
         assertEquals(100L,result.id());
         assertEquals("TaskTitle1",result.title());
         assertEquals(TaskStatus.IN_PROGRESS,result.taskStatus());
+    }
+
+    @Test
+    void shouldMoveTaskToAnotherGroup() {
+        User user=createUser();
+
+        Group oldGroup=createGroup(user);
+        oldGroup.setId(10L);
+        oldGroup.setTitle("Mathematics");
+
+        Group newGroup=createGroup(user);
+        newGroup.setId(20L);
+        newGroup.setTitle("Physics");
+
+        Task task=createTask(oldGroup);
+
+        var request=new UpdateTaskRequest(task.getTitle(),task.getNote(),task.getSolutionDifficulty(),task.getTimeDifficulty(),task.isHighlighted(),task.getDeadline(),
+            task.getTaskStatus(),20L);
+
+        when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(oldGroup));
+        when(groupRepository.findByIdAndUserId(20L,1L)).thenReturn(Optional.of(newGroup));
+        when(taskRepository.findByIdAndGroupId(100L,10L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(task)).thenReturn(task);
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+        var result=taskService.updateTask(1L,10L,100L,request);
+
+        assertEquals(20L,task.getGroup().getId());
+        assertEquals(20L,result.groupId());
     }
 
     @Test
@@ -204,7 +234,8 @@ class TaskServiceTest{
         task.setTaskStatus(TaskStatus.IN_PROGRESS);
         task.setCompletedAt(null);
 
-        var request=new UpdateTaskRequest(task.getTitle(),task.getNote(),task.getSolutionDifficulty(),task.getTimeDifficulty(),task.isHighlighted(),task.getDeadline(),TaskStatus.COMPLETED);
+        var request=new UpdateTaskRequest(task.getTitle(),task.getNote(),task.getSolutionDifficulty(),task.getTimeDifficulty(),task.isHighlighted(),task.getDeadline(),
+            TaskStatus.COMPLETED,10L);
 
         when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
         when(taskRepository.findByIdAndGroupId(100L,10L)).thenReturn(Optional.of(task));
@@ -226,7 +257,8 @@ class TaskServiceTest{
         task.setTaskStatus(TaskStatus.COMPLETED);
         task.setCompletedAt(completedAt);
 
-        var request=new UpdateTaskRequest(task.getTitle(),task.getNote(),task.getSolutionDifficulty(),task.getTimeDifficulty(),task.isHighlighted(),task.getDeadline(),TaskStatus.IN_PROGRESS);
+        var request=new UpdateTaskRequest(task.getTitle(),task.getNote(),task.getSolutionDifficulty(),task.getTimeDifficulty(),task.isHighlighted(),task.getDeadline(),
+            TaskStatus.IN_PROGRESS,10L);
 
         when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
         when(taskRepository.findByIdAndGroupId(100L,10L)).thenReturn(Optional.of(task));
@@ -248,7 +280,8 @@ class TaskServiceTest{
         task.setTaskStatus(TaskStatus.COMPLETED);
         task.setCompletedAt(completedAt);
 
-        var request=new UpdateTaskRequest("UpdatedTitleStatusTest",task.getNote(),task.getSolutionDifficulty(),task.getTimeDifficulty(),task.isHighlighted(),task.getDeadline(),TaskStatus.COMPLETED);
+        var request=new UpdateTaskRequest("UpdatedTitleStatusTest",task.getNote(),task.getSolutionDifficulty(),task.getTimeDifficulty(),task.isHighlighted(),task.getDeadline(),
+            TaskStatus.COMPLETED,10L);
 
         when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
         when(taskRepository.findByIdAndGroupId(100L,10L)).thenReturn(Optional.of(task));

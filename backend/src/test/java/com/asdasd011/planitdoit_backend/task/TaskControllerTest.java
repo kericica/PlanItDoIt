@@ -18,6 +18,9 @@ import java.time.Instant;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -77,7 +80,7 @@ class TaskControllerTest {
     @Test
     void shouldUpdateTask()throws Exception{
         when(taskService.updateTask(1L,10L,100L,new UpdateTaskRequest("TaskTitle1","exercises 11-20",SolutionDifficulty.HARD,TimeDifficulty.LOT,false,null,
-            TaskStatus.IN_PROGRESS))).thenReturn(new TaskResponse(100L,"TaskTitle1","exercises 11-20",SolutionDifficulty.HARD,TimeDifficulty.LOT,false,null,
+            TaskStatus.IN_PROGRESS,10L))).thenReturn(new TaskResponse(100L,"TaskTitle1","exercises 11-20",SolutionDifficulty.HARD,TimeDifficulty.LOT,false,null,
             TaskStatus.IN_PROGRESS,null,null,10L));
 
         mockMvc.perform(put("/api/groups/10/tasks/100").contentType(MediaType.APPLICATION_JSON).content("""
@@ -87,10 +90,31 @@ class TaskControllerTest {
                 "solutionDifficulty": "HARD",
                 "timeDifficulty": "LOT",
                 "highlighted": false,
-                "taskStatus": "IN_PROGRESS"
+                "taskStatus": "IN_PROGRESS",
+                "groupId": 10
             }
             """)).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(100)).andExpect(jsonPath("$.title").value("TaskTitle1")).andExpect(jsonPath("$.solutionDifficulty").value("HARD"))
             .andExpect(jsonPath("$.taskStatus").value("IN_PROGRESS")).andExpect(jsonPath("$.groupId").value(10));
+    }
+
+    @Test
+    void shouldMoveTaskToAnotherGroup()throws Exception{
+        when(taskService.updateTask(eq(1L),eq(10L),eq(100L),any(UpdateTaskRequest.class))).thenReturn(new TaskResponse(100L,"Solve equations","Exercises 1-10",
+            SolutionDifficulty.MID,TimeDifficulty.MID,true,null,TaskStatus.TODO,null,null,20L));
+
+        mockMvc.perform(put("/api/groups/10/tasks/100").contentType(MediaType.APPLICATION_JSON).content("""
+            {
+                "title": "Solve equations",
+                "note": "Exercises 1-10",
+                "solutionDifficulty": "MID",
+                "timeDifficulty": "MID",
+                "highlighted": true,
+                "taskStatus": "TODO",
+                "groupId": 20
+            }
+            """)).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(100)).andExpect(jsonPath("$.groupId").value(20));
+
+        verify(taskService).updateTask(eq(1L),eq(10L),eq(100L),argThat(request->request.groupId().equals(20L)&& request.title().equals("Solve equations")));
     }
 
     @Test
@@ -117,7 +141,7 @@ class TaskControllerTest {
     @Test
     void shouldClearCompletedAtWhenTaskIsNoLongerCompleted()throws Exception{
         when(taskService.updateTask(1L,10L,100L,new UpdateTaskRequest("UpdatedStatus TaskTitle","updated note",SolutionDifficulty.MID,TimeDifficulty.MID,false,null,
-            TaskStatus.IN_PROGRESS))).thenReturn(new TaskResponse(100L,"UpdatedStatus TaskTitle","updated note",SolutionDifficulty.MID,TimeDifficulty.MID,false,null,
+            TaskStatus.IN_PROGRESS,10L))).thenReturn(new TaskResponse(100L,"UpdatedStatus TaskTitle","updated note",SolutionDifficulty.MID,TimeDifficulty.MID,false,null,
             TaskStatus.IN_PROGRESS,null,null,10L));
 
         mockMvc.perform(put("/api/groups/10/tasks/100").contentType(MediaType.APPLICATION_JSON).content("""
@@ -127,7 +151,8 @@ class TaskControllerTest {
                 "solutionDifficulty": "MID",
                 "timeDifficulty": "MID",
                 "highlighted": false,
-                "taskStatus": "IN_PROGRESS"
+                "taskStatus": "IN_PROGRESS",
+                 "groupId": 10
             }
             """)).andExpect(status().isOk()).andExpect(jsonPath("$.taskStatus").value("IN_PROGRESS")).andExpect(jsonPath("$.completedAt").doesNotExist());
     }

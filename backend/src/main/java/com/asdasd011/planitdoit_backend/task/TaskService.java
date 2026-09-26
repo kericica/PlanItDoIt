@@ -54,6 +54,7 @@ public class TaskService{
     public TaskResponse updateTask(Long userId,Long groupId,Long taskId,UpdateTaskRequest request){
         getUserGroup(userId,groupId);
         Task task=taskRepository.findByIdAndGroupId(taskId,groupId).orElseThrow(()->new ResourceNotFoundException("task not found"));
+        Group targetGroup=getUserGroup(userId,request.groupId());
         task.setTitle(request.title());
         task.setNote(request.note());
         task.setSolutionDifficulty(request.solutionDifficulty());
@@ -61,6 +62,7 @@ public class TaskService{
         task.setHighlighted(request.highlighted());
         task.setDeadline(request.deadline());
         applyStatus(task,request.taskStatus());
+        task.setGroup(targetGroup);
 
         Task updatedTask=taskRepository.save(task);
         return toResponse(updatedTask);

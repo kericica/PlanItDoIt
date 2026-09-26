@@ -13,5 +13,6 @@ public record UpdateTaskRequest(
     TimeDifficulty timeDifficulty,
     Boolean highlighted,
     LocalDate deadline,
-    TaskStatus taskStatus
+    TaskStatus taskStatus,
+    Long groupId
 ){}
