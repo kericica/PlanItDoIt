@@ -6,10 +6,13 @@ import com.asdasd011.planitdoit_backend.user.User;
 import com.asdasd011.planitdoit_backend.exception.ResourceNotFoundException;
 import com.asdasd011.planitdoit_backend.task.dto.CreateTaskRequest;
 import com.asdasd011.planitdoit_backend.task.dto.UpdateTaskRequest;
+import com.asdasd011.planitdoit_backend.sort.SortDirection;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentMatchers;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.Optional;
@@ -71,10 +74,10 @@ class TaskServiceTest{
         Task task=createTask(group);
 
         when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
-        when(taskRepository.findByGroupId(10L)).thenReturn(List.of(task));
+        when(taskRepository.findByGroupId(ArgumentMatchers.eq(10L),ArgumentMatchers.any(Sort.class))).thenReturn(List.of(task));
 
         TaskService taskService=new TaskService(taskRepository,groupRepository);
-        var result=taskService.getTasksForGroup(1L,10L);
+        var result=taskService.getTasksForGroup(1L,10L,TaskSort.TITLE,SortDirection.ASC);
 
         assertEquals(1,result.size());
         assertEquals(100L,result.get(0).id());
@@ -278,7 +281,7 @@ class TaskServiceTest{
 
         TaskService taskService=new TaskService(taskRepository,groupRepository);
 
-        assertThrows(ResourceNotFoundException.class,()->taskService.getTasksForGroup(1L,10L));
+        assertThrows(ResourceNotFoundException.class,()->taskService.getTasksForGroup(1L,10L,TaskSort.TITLE,SortDirection.ASC));
     }
 
     @Test
@@ -292,5 +295,55 @@ class TaskServiceTest{
         TaskService taskService=new TaskService(taskRepository,groupRepository);
 
         assertThrows(ResourceNotFoundException.class,()->taskService.getTaskForGroup(1L,10L,100L));
+    }
+
+    @Test
+    void shouldSortTasksByDeadlineAscending(){
+        User user=createUser();
+        Group group=createGroup(user);
+
+        Task firstTask=createTask(group);
+        firstTask.setId(100L);
+        firstTask.setTitle("First task");
+        firstTask.setDeadline(LocalDate.of(2026,9,28));
+
+        Task secondTask=createTask(group);
+        secondTask.setId(200L);
+        secondTask.setTitle("Second task");
+        secondTask.setDeadline(LocalDate.of(2026,10,5));
+
+        when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
+        when(taskRepository.findByGroupId(ArgumentMatchers.eq(10L),ArgumentMatchers.any(Sort.class))).thenReturn(List.of(firstTask,secondTask));
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+        var result=taskService.getTasksForGroup(1L,10L,TaskSort.DEADLINE,SortDirection.ASC);
+
+        assertEquals("First task",result.get(0).title());
+        assertEquals("Second task",result.get(1).title());
+    }
+
+    @Test
+    void shouldSortTasksBySolutionDifficultyDescending(){
+        User user=createUser();
+        Group group=createGroup(user);
+
+        Task easyTask=createTask(group);
+        easyTask.setId(100L);
+        easyTask.setTitle("Easy task");
+        easyTask.setSolutionDifficulty(SolutionDifficulty.EASY);
+
+        Task hardTask=createTask(group);
+        hardTask.setId(200L);
+        hardTask.setTitle("Hard task");
+        hardTask.setSolutionDifficulty(SolutionDifficulty.HARD);
+
+        when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
+        when(taskRepository.findByGroupId(ArgumentMatchers.eq(10L),ArgumentMatchers.any(Sort.class))).thenReturn(List.of(hardTask,easyTask));
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+        var result=taskService.getTasksForGroup(1L,10L,TaskSort.SOLUTION_DIFFICULTY,SortDirection.DESC);
+
+        assertEquals(SolutionDifficulty.HARD,result.get(0).solutionDifficulty());
+        assertEquals(SolutionDifficulty.EASY,result.get(1).solutionDifficulty());
     }
 }

@@ -4,6 +4,7 @@ import com.asdasd011.planitdoit_backend.group.dto.GroupResponse;
 import com.asdasd011.planitdoit_backend.group.dto.UpdateGroupRequest;
 import com.asdasd011.planitdoit_backend.group.dto.CreateGroupRequest;
 import com.asdasd011.planitdoit_backend.exception.ResourceNotFoundException;
+import com.asdasd011.planitdoit_backend.sort.SortDirection;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -34,7 +35,7 @@ class GroupControllerTest{
 
     @Test
     void shouldReturnGroupsForUser() throws Exception{
-        when(groupService.getGroupsForUser(1L)).thenReturn(List.of(new GroupResponse(10L,"Test0",1L)));
+        when(groupService.getGroupsForUser(1L,GroupSort.TITLE,SortDirection.ASC)).thenReturn(List.of(new GroupResponse(10L,"Test0",1L)));
 
         mockMvc.perform(get("/api/groups")).andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$[0].id").value(10)).andExpect(jsonPath("$[0].title").value("Test0")).andExpect(jsonPath("$[0].userId").value(1));
@@ -77,5 +78,13 @@ class GroupControllerTest{
         mockMvc.perform(delete("/api/groups/10")).andExpect(status().isNoContent());
 
         verify(groupService).deleteGroup(1L, 10L);
+    }
+
+    @Test
+    void shouldSortGroupsByIncompleteTasksDescending()throws Exception{
+        when(groupService.getGroupsForUser(1L,GroupSort.INCOMPLETE_TASKS,SortDirection.DESC)).thenReturn(List.of(new GroupResponse(20L,"Physics", 1L),new GroupResponse(10L,"Mathematics", 1L)));
+
+        mockMvc.perform(get("/api/groups").param("sort","INCOMPLETE_TASKS").param("direction","DESC")).andExpect(status().isOk()).andExpect(jsonPath("$[0].title").value("Physics"))
+            .andExpect(jsonPath("$[1].title").value("Mathematics"));
     }
 }

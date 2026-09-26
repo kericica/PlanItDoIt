@@ -3,6 +3,7 @@ package com.asdasd011.planitdoit_backend.task;
 import com.asdasd011.planitdoit_backend.task.dto.TaskResponse;
 import com.asdasd011.planitdoit_backend.task.dto.CreateTaskRequest;
 import com.asdasd011.planitdoit_backend.task.dto.UpdateTaskRequest;
+import com.asdasd011.planitdoit_backend.sort.SortDirection;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 
@@ -16,7 +17,9 @@ public class TaskController{
     public TaskController(TaskService taskService){this.taskService=taskService;}
 
     @GetMapping
-    public List<TaskResponse> getTasks(@PathVariable Long groupId){return taskService.getTasksForGroup(1L,groupId);}
+    public List<TaskResponse> getTasks(@PathVariable Long groupId,@RequestParam(defaultValue="TITLE") TaskSort sort,@RequestParam(defaultValue="ASC") SortDirection direction) {
+        return taskService.getTasksForGroup(1L,groupId,sort,direction);
+    }
 
     @GetMapping("/{taskId}")
     public TaskResponse getTask(@PathVariable Long groupId,@PathVariable Long taskId){return taskService.getTaskForGroup(1L,groupId,taskId);}

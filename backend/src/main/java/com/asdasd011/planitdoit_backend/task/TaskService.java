@@ -6,6 +6,8 @@ import com.asdasd011.planitdoit_backend.group.GroupRepository;
 import com.asdasd011.planitdoit_backend.task.dto.TaskResponse;
 import com.asdasd011.planitdoit_backend.task.dto.CreateTaskRequest;
 import com.asdasd011.planitdoit_backend.task.dto.UpdateTaskRequest;
+import com.asdasd011.planitdoit_backend.sort.SortDirection;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,9 +23,9 @@ public class TaskService{
         this.groupRepository=groupRepository;
     }
 
-    public List<TaskResponse> getTasksForGroup(Long userId,Long groupId){
-        Group group=groupRepository.findByIdAndUserId(groupId,userId).orElseThrow(()->new ResourceNotFoundException("group not found"));
-        return taskRepository.findByGroupId(group.getId()).stream().map(this::toResponse).toList();
+    public List<TaskResponse> getTasksForGroup(Long userId,Long groupId,TaskSort sort,SortDirection direction){
+        Group group=getUserGroup(userId,groupId);
+        return taskRepository.findByGroupId(group.getId(),buildSort(sort,direction)).stream().map(this::toResponse).toList();
     }
 
     public TaskResponse getTaskForGroup(Long userId,Long groupId,Long taskId){
@@ -76,6 +78,19 @@ public class TaskService{
         task.setTaskStatus(effectiveStatus);
         if(effectiveStatus==TaskStatus.COMPLETED&&previousStatus!=TaskStatus.COMPLETED)task.setCompletedAt(Instant.now());
         else if(effectiveStatus!=TaskStatus.COMPLETED)task.setCompletedAt(null);
+    }
+
+    private Sort buildSort(TaskSort sort,SortDirection direction){
+        String property=switch(sort){
+            case TITLE->"title";
+            case CREATED_AT->"createdAt";
+            case DEADLINE->"deadline";
+            case SOLUTION_DIFFICULTY->"solutionDifficulty";
+        };
+        Sort.Direction springDirection=direction==SortDirection.ASC?Sort.Direction.ASC:Sort.Direction.DESC;
+        Sort.Order primaryOrder=new Sort.Order(springDirection,property);
+        if(sort==TaskSort.DEADLINE)primaryOrder=primaryOrder.nullsLast();
+        return Sort.by(primaryOrder,new Sort.Order(Sort.Direction.ASC,"id")); 
     }
 
     private Group getUserGroup(Long userId,Long groupId){return groupRepository.findByIdAndUserId(groupId,userId).orElseThrow(()->new ResourceNotFoundException("group not found"));}

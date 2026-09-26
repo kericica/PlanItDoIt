@@ -3,6 +3,7 @@ package com.asdasd011.planitdoit_backend.group;
 import com.asdasd011.planitdoit_backend.group.dto.GroupResponse;
 import com.asdasd011.planitdoit_backend.group.dto.CreateGroupRequest;
 import com.asdasd011.planitdoit_backend.group.dto.UpdateGroupRequest;
+import com.asdasd011.planitdoit_backend.sort.SortDirection;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +17,9 @@ public class GroupController{
     public GroupController(GroupService groupService){this.groupService=groupService;}
 
     @GetMapping
-    public List<GroupResponse> getGroups(){return groupService.getGroupsForUser(1L);}
+    public List<GroupResponse> getGroups(@RequestParam(defaultValue="TITLE") GroupSort sort,@RequestParam(defaultValue="ASC") SortDirection direction){
+        return groupService.getGroupsForUser(1L,sort,direction);
+    }
 
     @GetMapping("/{groupId}")
     public GroupResponse getGroup(@PathVariable Long groupId) {return groupService.getGroupForUser(1L,groupId);}

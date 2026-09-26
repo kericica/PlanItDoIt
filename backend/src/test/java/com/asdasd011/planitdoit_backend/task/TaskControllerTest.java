@@ -4,6 +4,7 @@ import com.asdasd011.planitdoit_backend.exception.ResourceNotFoundException;
 import com.asdasd011.planitdoit_backend.task.dto.CreateTaskRequest;
 import com.asdasd011.planitdoit_backend.task.dto.TaskResponse;
 import com.asdasd011.planitdoit_backend.task.dto.UpdateTaskRequest;
+import com.asdasd011.planitdoit_backend.sort.SortDirection;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -35,8 +36,8 @@ class TaskControllerTest {
 
     @Test
     void shouldReturnTasksForGroup()throws Exception{
-        when(taskService.getTasksForGroup(1L,10L)).thenReturn(List.of(new TaskResponse(100L,"TaskTitle0","exercises 1-10",SolutionDifficulty.MID,
-            TimeDifficulty.MID,true,null,TaskStatus.TODO,null,null,10L)));
+        when(taskService.getTasksForGroup(1L,10L,TaskSort.TITLE,SortDirection.ASC)).thenReturn(List.of(new TaskResponse(100L,"TaskTitle0","exercises 1-10",
+            SolutionDifficulty.MID,TimeDifficulty.MID,true,null,TaskStatus.TODO,null,null,10L)));
 
         mockMvc.perform(get("/api/groups/10/tasks")).andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$[0].id").value(100)).andExpect(jsonPath("$[0].title").value("TaskTitle0")).andExpect(jsonPath("$[0].note").value("exercises 1-10"))
@@ -142,7 +143,7 @@ class TaskControllerTest {
 
     @Test
     void shouldReturnNotFoundWhenGroupDoesNotBelongToUser()throws Exception{
-        when(taskService.getTasksForGroup(1L,10L)).thenThrow(new ResourceNotFoundException("group not found"));
+        when(taskService.getTasksForGroup(1L,10L,TaskSort.TITLE,SortDirection.ASC)).thenThrow(new ResourceNotFoundException("group not found"));
 
         mockMvc.perform(get("/api/groups/10/tasks")).andExpect(status().isNotFound()).andExpect(jsonPath("$.status").value(404)).andExpect(jsonPath("$.message").value("group not found"));
     }
@@ -152,5 +153,15 @@ class TaskControllerTest {
         when(taskService.getTaskForGroup(1L,10L,100L)).thenThrow(new ResourceNotFoundException("task not found"));
 
         mockMvc.perform(get("/api/groups/10/tasks/100")).andExpect(status().isNotFound()).andExpect(jsonPath("$.status").value(404)).andExpect(jsonPath("$.message").value("task not found"));
+    }
+
+    @Test
+    void shouldSortTasksBySolutionDifficultyDescending()throws Exception{
+        when(taskService.getTasksForGroup(1L,10L,TaskSort.SOLUTION_DIFFICULTY,SortDirection.DESC)).thenReturn(List.of(
+            new TaskResponse(200L,"Hard task",null,SolutionDifficulty.HARD,TimeDifficulty.MID,false,null,TaskStatus.TODO,null,null,10L),
+            new TaskResponse(100L, "Easy task",null,SolutionDifficulty.EASY,TimeDifficulty.MID,false,null,TaskStatus.TODO,null,null,10L)));
+
+        mockMvc.perform(get("/api/groups/10/tasks").param("sort","SOLUTION_DIFFICULTY").param("direction","DESC")).andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].title").value("Hard task")).andExpect(jsonPath("$[1].title").value("Easy task"));
     }
 }
