@@ -3,6 +3,7 @@ package com.asdasd011.planitdoit_backend.task;
 import com.asdasd011.planitdoit_backend.task.dto.TaskResponse;
 import com.asdasd011.planitdoit_backend.task.dto.CreateTaskRequest;
 import com.asdasd011.planitdoit_backend.task.dto.UpdateTaskRequest;
+import com.asdasd011.planitdoit_backend.task.dto.TaskCompletionSummaryResponse;
 import com.asdasd011.planitdoit_backend.sort.SortDirection;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
@@ -21,9 +22,12 @@ public class TaskController{
         return taskService.getTasksForGroup(1L,groupId,sort,direction);
     }
 
+    @GetMapping("/summary")
+    public TaskCompletionSummaryResponse getCompletionSummary(@PathVariable Long groupId){return taskService.getCompletionSummary(1L,groupId);}
+
     @GetMapping("/{taskId}")
     public TaskResponse getTask(@PathVariable Long groupId,@PathVariable Long taskId){return taskService.getTaskForGroup(1L,groupId,taskId);}
-
+    
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public TaskResponse createTask(@PathVariable Long groupId,@RequestBody CreateTaskRequest request){return taskService.createTask(1L,groupId,request);}

@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.Optional;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Instant;
 
@@ -378,5 +379,68 @@ class TaskServiceTest{
 
         assertEquals(SolutionDifficulty.HARD,result.get(0).solutionDifficulty());
         assertEquals(SolutionDifficulty.EASY,result.get(1).solutionDifficulty());
+    }
+
+    @Test
+    void shouldCalculateCompletionSummary(){
+        User user=createUser();
+        Group group=createGroup(user);
+
+        when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
+        when(taskRepository.getCompletionCountsByTimeDifficulty(10L,TaskStatus.COMPLETED)).thenReturn(List.of(new Object[]{TimeDifficulty.FLASH,6L,3L},new Object[]{TimeDifficulty.MID,5L,4L},
+            new Object[]{TimeDifficulty.LOT,4L,2L}));
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+        var result=taskService.getCompletionSummary(1L,10L);
+
+        assertEquals(15,result.overall().totalTasks());
+        assertEquals(9,result.overall().completedTasks());
+        assertEquals(new BigDecimal("60.00"),result.overall().percentage());
+        assertEquals(6,result.byTimeDifficulty().get(TimeDifficulty.FLASH).totalTasks());
+        assertEquals(3,result.byTimeDifficulty().get(TimeDifficulty.FLASH).completedTasks());
+        assertEquals(new BigDecimal("50.00"),result.byTimeDifficulty().get(TimeDifficulty.FLASH).percentage());
+        assertEquals(new BigDecimal("80.00"),result.byTimeDifficulty().get(TimeDifficulty.MID).percentage());
+        assertEquals(new BigDecimal("50.00"),result.byTimeDifficulty().get(TimeDifficulty.LOT).percentage());
+    }
+
+    @Test
+    void shouldReturnNullPercentageForEmptyTimeDifficulty(){
+        User user=createUser();
+        Group group=createGroup(user);
+
+        when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
+        when(taskRepository.getCompletionCountsByTimeDifficulty(10L,TaskStatus.COMPLETED)).thenReturn(List.of(new Object[]{TimeDifficulty.FLASH,4L,2L},new Object[]{TimeDifficulty.LOT,2L,1L}));
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+        var result=taskService.getCompletionSummary(1L,10L);
+        var midProgress=result.byTimeDifficulty().get(TimeDifficulty.MID);
+
+        assertEquals(0,midProgress.totalTasks());
+        assertEquals(0,midProgress.completedTasks());
+        assertNull(midProgress.percentage());
+    }
+
+    @Test
+    void shouldReturnNullPercentageForEmptyGroup(){
+        User user=createUser();
+        Group group=createGroup(user);
+
+        when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(group));
+        when(taskRepository.getCompletionCountsByTimeDifficulty(10L,TaskStatus.COMPLETED)).thenReturn(List.of());
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+        var result=taskService.getCompletionSummary(1L,10L);
+
+        assertEquals(0,result.overall().totalTasks());
+        assertEquals(0,result.overall().completedTasks());
+        assertNull(result.overall().percentage());
+
+        for (TimeDifficulty difficulty:TimeDifficulty.values()){
+            var progress=result.byTimeDifficulty().get(difficulty);
+
+            assertEquals(0,progress.totalTasks());
+            assertEquals(0,progress.completedTasks());
+            assertNull(progress.percentage());
+        }
     }
 }

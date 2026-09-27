@@ -6,12 +6,18 @@ import com.asdasd011.planitdoit_backend.group.GroupRepository;
 import com.asdasd011.planitdoit_backend.task.dto.TaskResponse;
 import com.asdasd011.planitdoit_backend.task.dto.CreateTaskRequest;
 import com.asdasd011.planitdoit_backend.task.dto.UpdateTaskRequest;
+import com.asdasd011.planitdoit_backend.task.dto.CompletionProgress;
+import com.asdasd011.planitdoit_backend.task.dto.TaskCompletionSummaryResponse;
 import com.asdasd011.planitdoit_backend.sort.SortDirection;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.EnumMap;
+import java.util.Map;
 import java.time.Instant;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Service
 public class TaskService{
@@ -74,6 +80,27 @@ public class TaskService{
         taskRepository.delete(task);
     }
 
+    public TaskCompletionSummaryResponse getCompletionSummary(Long userId,Long groupId){
+        getUserGroup(userId,groupId);
+        Map<TimeDifficulty,CompletionProgress> progressByDifficulty=new EnumMap<>(TimeDifficulty.class);
+        long overallTotal=0;
+        long overallCompleted=0;
+
+        for(Object[] row:taskRepository.getCompletionCountsByTimeDifficulty(groupId,TaskStatus.COMPLETED)){
+            TimeDifficulty difficulty=(TimeDifficulty)row[0];
+            long total=(Long)row[1];
+            long completed=row[2]!=null?((Number)row[2]).longValue():0L;
+            progressByDifficulty.put(difficulty,calculateProgress(total,completed));
+            overallTotal+=total;
+            overallCompleted+=completed;
+        }
+        for(TimeDifficulty difficulty:TimeDifficulty.values()){
+            progressByDifficulty.putIfAbsent(difficulty,calculateProgress(0,0));
+        }
+        
+        return new TaskCompletionSummaryResponse(calculateProgress(overallTotal,overallCompleted),progressByDifficulty);
+    }
+
     private void applyStatus(Task task,TaskStatus newStatus){
         TaskStatus effectiveStatus=newStatus!=null?newStatus:TaskStatus.TODO;
         TaskStatus previousStatus=task.getTaskStatus();
@@ -100,5 +127,11 @@ public class TaskService{
     public TaskResponse toResponse(Task task){
         return new TaskResponse(task.getId(),task.getTitle(),task.getNote(),task.getSolutionDifficulty(),task.getTimeDifficulty(),task.isHighlighted(),
             task.getDeadline(),task.getTaskStatus(),task.getCreatedAt(),task.getCompletedAt(),task.getGroup().getId());
+    }
+
+    private CompletionProgress calculateProgress(long total,long completed){
+        if(total==0)return new CompletionProgress(0,0,null);
+        BigDecimal percentage=BigDecimal.valueOf(completed).multiply(BigDecimal.valueOf(100)).divide(BigDecimal.valueOf(total),2,RoundingMode.HALF_UP);
+        return new CompletionProgress(total,completed,percentage);
     }
 }

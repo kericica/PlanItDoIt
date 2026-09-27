@@ -4,6 +4,8 @@ import com.asdasd011.planitdoit_backend.exception.ResourceNotFoundException;
 import com.asdasd011.planitdoit_backend.task.dto.CreateTaskRequest;
 import com.asdasd011.planitdoit_backend.task.dto.TaskResponse;
 import com.asdasd011.planitdoit_backend.task.dto.UpdateTaskRequest;
+import com.asdasd011.planitdoit_backend.task.dto.CompletionProgress;
+import com.asdasd011.planitdoit_backend.task.dto.TaskCompletionSummaryResponse;
 import com.asdasd011.planitdoit_backend.sort.SortDirection;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Map;
+import java.math.BigDecimal;
 import java.time.Instant;
 
 import static org.mockito.Mockito.doNothing;
@@ -188,5 +192,42 @@ class TaskControllerTest {
 
         mockMvc.perform(get("/api/groups/10/tasks").param("sort","SOLUTION_DIFFICULTY").param("direction","DESC")).andExpect(status().isOk())
             .andExpect(jsonPath("$[0].title").value("Hard task")).andExpect(jsonPath("$[1].title").value("Easy task"));
+    }
+
+    @Test
+    void shouldReturnCompletionSummary()throws Exception{
+        var summary=new TaskCompletionSummaryResponse(new CompletionProgress(15,9,new BigDecimal("60.00")),Map.of(TimeDifficulty.FLASH,new CompletionProgress(6,3,new BigDecimal("50.00")),
+            TimeDifficulty.MID,new CompletionProgress(5,4,new BigDecimal("80.00")),TimeDifficulty.LOT,new CompletionProgress(4,2,new BigDecimal("50.00"))));
+
+        when(taskService.getCompletionSummary(1L,10L)).thenReturn(summary);
+
+        mockMvc.perform(get("/api/groups/10/tasks/summary"))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.overall.totalTasks").value(15))
+            .andExpect(jsonPath("$.overall.completedTasks").value(9))
+            .andExpect(jsonPath("$.overall.percentage").value(60.00))
+            .andExpect(jsonPath("$.byTimeDifficulty.FLASH.totalTasks").value(6))
+            .andExpect(jsonPath("$.byTimeDifficulty.FLASH.completedTasks").value(3))
+            .andExpect(jsonPath("$.byTimeDifficulty.FLASH.percentage").value(50.00))
+            .andExpect(jsonPath("$.byTimeDifficulty.MID.percentage").value(80.00))
+            .andExpect(jsonPath("$.byTimeDifficulty.LOT.percentage").value(50.00));
+    }
+
+    @Test
+    void shouldReturnEmptyCompletionSummary()throws Exception{
+        var emptyProgress=new CompletionProgress(0,0,null);
+        var summary=new TaskCompletionSummaryResponse(emptyProgress,Map.of(TimeDifficulty.FLASH, emptyProgress,TimeDifficulty.MID, emptyProgress,TimeDifficulty.LOT,emptyProgress));
+
+        when(taskService.getCompletionSummary(1L,10L)).thenReturn(summary);
+
+        mockMvc.perform(get("/api/groups/10/tasks/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.overall.totalTasks").value(0))
+                .andExpect(jsonPath("$.overall.completedTasks").value(0))
+                .andExpect(jsonPath("$.overall.percentage").doesNotExist())
+                .andExpect(jsonPath("$.byTimeDifficulty.FLASH.percentage").doesNotExist())
+                .andExpect(jsonPath("$.byTimeDifficulty.MID.percentage").doesNotExist())
+                .andExpect(jsonPath("$.byTimeDifficulty.LOT.percentage").doesNotExist());
     }
 }
