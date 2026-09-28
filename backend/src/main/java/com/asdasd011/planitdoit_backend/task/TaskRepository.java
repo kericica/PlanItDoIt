@@ -44,4 +44,14 @@ public interface TaskRepository extends JpaRepository<Task,Long>{
         GROUP BY t.timeDifficulty
     """)
     List<Object[]> getCompletionCountsByTimeDifficulty(@Param("groupId") Long groupId,@Param("completedStatus")TaskStatus completedStatus);
+
+    @Query("""
+        SELECT COUNT(t),SUM(CASE
+                                WHEN t.taskStatus=:completedStatus THEN 1
+                                ELSE 0
+                            END)
+        FROM Task t
+        WHERE t.group.user.id=:userId
+    """)
+    Object[] getGlobalCompletionCounts(@Param("userId") Long userId,@Param("completedStatus") TaskStatus completedStatus);
 }

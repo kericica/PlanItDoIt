@@ -6,6 +6,7 @@ import com.asdasd011.planitdoit_backend.user.User;
 import com.asdasd011.planitdoit_backend.exception.ResourceNotFoundException;
 import com.asdasd011.planitdoit_backend.task.dto.CreateTaskRequest;
 import com.asdasd011.planitdoit_backend.task.dto.UpdateTaskRequest;
+import com.asdasd011.planitdoit_backend.task.dto.GlobalTaskCompletionResponse;
 import com.asdasd011.planitdoit_backend.sort.SortDirection;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -442,5 +443,29 @@ class TaskServiceTest{
             assertEquals(0,progress.completedTasks());
             assertNull(progress.percentage());
         }
+    }
+
+    @Test
+    void shouldCalculateGlobalCompletionSummary(){
+        when(taskRepository.getGlobalCompletionCounts(1L,TaskStatus.COMPLETED)).thenReturn(new Object[]{20L,12L});
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+        GlobalTaskCompletionResponse result=taskService.getGlobalCompletionSummary(1L);
+
+        assertEquals(20L,result.totalTasks());
+        assertEquals(12L,result.completedTasks());
+        assertEquals(new BigDecimal("60.00"),result.completionPercentage());
+    }
+
+    @Test
+    void shouldReturnNullPercentageWhenUserHasNoTasks(){
+        when(taskRepository.getGlobalCompletionCounts(1L,TaskStatus.COMPLETED)).thenReturn(new Object[]{0L, null});
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+        GlobalTaskCompletionResponse result=taskService.getGlobalCompletionSummary(1L);
+
+        assertEquals(0L,result.totalTasks());
+        assertEquals(0L,result.completedTasks());
+        assertNull(result.completionPercentage());
     }
 }

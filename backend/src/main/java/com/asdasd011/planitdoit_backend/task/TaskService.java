@@ -8,6 +8,7 @@ import com.asdasd011.planitdoit_backend.task.dto.CreateTaskRequest;
 import com.asdasd011.planitdoit_backend.task.dto.UpdateTaskRequest;
 import com.asdasd011.planitdoit_backend.task.dto.CompletionProgress;
 import com.asdasd011.planitdoit_backend.task.dto.TaskCompletionSummaryResponse;
+import com.asdasd011.planitdoit_backend.task.dto.GlobalTaskCompletionResponse;
 import com.asdasd011.planitdoit_backend.sort.SortDirection;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -101,6 +102,14 @@ public class TaskService{
         return new TaskCompletionSummaryResponse(calculateProgress(overallTotal,overallCompleted),progressByDifficulty);
     }
 
+    public GlobalTaskCompletionResponse getGlobalCompletionSummary(Long userId){
+        Object[] row=taskRepository.getGlobalCompletionCounts(userId,TaskStatus.COMPLETED);
+        long totalTasks=((Number)row[0]).longValue();
+        long completedTasks=row[1]!=null?((Number)row[1]).longValue():0L;
+        BigDecimal completionPercentage=calculateCompletionPercentage(totalTasks,completedTasks);
+        return new GlobalTaskCompletionResponse(totalTasks,completedTasks,completionPercentage);
+    }
+
     private void applyStatus(Task task,TaskStatus newStatus){
         TaskStatus effectiveStatus=newStatus!=null?newStatus:TaskStatus.TODO;
         TaskStatus previousStatus=task.getTaskStatus();
@@ -130,8 +139,11 @@ public class TaskService{
     }
 
     private CompletionProgress calculateProgress(long total,long completed){
-        if(total==0)return new CompletionProgress(0,0,null);
-        BigDecimal percentage=BigDecimal.valueOf(completed).multiply(BigDecimal.valueOf(100)).divide(BigDecimal.valueOf(total),2,RoundingMode.HALF_UP);
-        return new CompletionProgress(total,completed,percentage);
+        return new CompletionProgress(total,completed,calculateCompletionPercentage(total,completed));
+    }
+
+    private BigDecimal calculateCompletionPercentage(long total,long completed){
+        if(total==0)return null;
+        return BigDecimal.valueOf(completed).multiply(BigDecimal.valueOf(100)).divide(BigDecimal.valueOf(total),2,RoundingMode.HALF_UP);
     }
 }
