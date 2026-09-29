@@ -11,29 +11,32 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
-import java.util.Map;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TaskController.class)
+@WithMockUser(username="test@example.com",roles="USER")
 class TaskControllerTest {
     @Autowired
     private MockMvc mockMvc;
@@ -68,7 +71,7 @@ class TaskControllerTest {
             TaskStatus.TODO,10L))).thenReturn(new TaskResponse(100L,"TaskTitle0","exercises 1-10",SolutionDifficulty.MID,TimeDifficulty.MID,true,null,
             TaskStatus.TODO,null,null,10L));
 
-        mockMvc.perform(post("/api/groups/10/tasks").contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(post("/api/groups/10/tasks").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
             {
                 "title": "TaskTitle0",
                 "note": "exercises 1-10",
@@ -87,7 +90,7 @@ class TaskControllerTest {
             TaskStatus.IN_PROGRESS,10L))).thenReturn(new TaskResponse(100L,"TaskTitle1","exercises 11-20",SolutionDifficulty.HARD,TimeDifficulty.LOT,false,null,
             TaskStatus.IN_PROGRESS,null,null,10L));
 
-        mockMvc.perform(put("/api/groups/10/tasks/100").contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(put("/api/groups/10/tasks/100").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
             {
                 "title": "TaskTitle1",
                 "note": "exercises 11-20",
@@ -106,7 +109,7 @@ class TaskControllerTest {
         when(taskService.updateTask(eq(1L),eq(10L),eq(100L),any(UpdateTaskRequest.class))).thenReturn(new TaskResponse(100L,"Solve equations","Exercises 1-10",
             SolutionDifficulty.MID,TimeDifficulty.MID,true,null,TaskStatus.TODO,null,null,20L));
 
-        mockMvc.perform(put("/api/groups/10/tasks/100").contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(put("/api/groups/10/tasks/100").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
             {
                 "title": "Solve equations",
                 "note": "Exercises 1-10",
@@ -129,7 +132,7 @@ class TaskControllerTest {
             TaskStatus.COMPLETED,10L))).thenReturn(new TaskResponse(100L,"StatusTest TaskTitle","completed status-time con",SolutionDifficulty.HARD,TimeDifficulty.LOT,true,null,
             TaskStatus.COMPLETED,null,completedAt,10L));
 
-        mockMvc.perform(post("/api/groups/10/tasks").contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(post("/api/groups/10/tasks").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
             {
                 "title": "StatusTest TaskTitle",
                 "note": "completed status-time con",
@@ -148,7 +151,7 @@ class TaskControllerTest {
             TaskStatus.IN_PROGRESS,10L))).thenReturn(new TaskResponse(100L,"UpdatedStatus TaskTitle","updated note",SolutionDifficulty.MID,TimeDifficulty.MID,false,null,
             TaskStatus.IN_PROGRESS,null,null,10L));
 
-        mockMvc.perform(put("/api/groups/10/tasks/100").contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(put("/api/groups/10/tasks/100").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
             {
                 "title": "UpdatedStatus TaskTitle",
                 "note": "updated note",
@@ -165,7 +168,7 @@ class TaskControllerTest {
     void shouldDeleteTask()throws Exception{
         doNothing().when(taskService).deleteTask(1L,10L,100L);
 
-        mockMvc.perform(delete("/api/groups/10/tasks/100")).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/groups/10/tasks/100").with(csrf())).andExpect(status().isNoContent());
 
         verify(taskService).deleteTask(1L,10L,100L);
     }

@@ -3,6 +3,7 @@ package com.asdasd011.planitdoit_backend.exception;
 import com.asdasd011.planitdoit_backend.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -31,8 +32,14 @@ public class GlobalExceptionHandler{
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidationException(MethodArgumentNotValidException exception){
-        ApiErrorResponse response=new ApiErrorResponse(HttpStatus.BAD_REQUEST.value(),"validation failed",Instant.now());
+        ApiErrorResponse response=new ApiErrorResponse(HttpStatus.BAD_REQUEST.value(),"Validation failed",Instant.now());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiErrorResponse> handleAuthenticationException(AuthenticationException exception){
+        ApiErrorResponse response=new ApiErrorResponse(HttpStatus.UNAUTHORIZED.value(),"Invalid email or password",Instant.now());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
 }

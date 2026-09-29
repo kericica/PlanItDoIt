@@ -8,25 +8,28 @@ import com.asdasd011.planitdoit_backend.sort.SortDirection;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.http.MediaType;
 
-import java.util.List;
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.doNothing;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 @WebMvcTest(GroupController.class)
+@WithMockUser(username="test@example.com",roles="USER")
 class GroupControllerTest{
     @Autowired
     private MockMvc mockMvc;
@@ -54,7 +57,7 @@ class GroupControllerTest{
     void shouldCreateGroup() throws Exception {
         when(groupService.createGroup(1L,new CreateGroupRequest("Test0"))).thenReturn(new GroupResponse(10L, "Test0", 1L,0L,0L,null));
 
-        mockMvc.perform(post("/api/groups").contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(post("/api/groups").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
             {
                 "title": "Test0"
             }
@@ -65,7 +68,7 @@ class GroupControllerTest{
     void shouldUpdateGroup() throws Exception {
         when(groupService.updateGroup(1L,10L, new UpdateGroupRequest("Test1"))).thenReturn(new GroupResponse(10L,"Test1",1L,10L,6L,new BigDecimal("60.00")));
 
-        mockMvc.perform(put("/api/groups/10").contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(put("/api/groups/10").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
             {
                 "title": "Test1"
             }
@@ -76,7 +79,7 @@ class GroupControllerTest{
     void shouldDeleteGroup() throws Exception {
         doNothing().when(groupService).deleteGroup(1L, 10L);
 
-        mockMvc.perform(delete("/api/groups/10")).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/groups/10").with(csrf())).andExpect(status().isNoContent());
 
         verify(groupService).deleteGroup(1L, 10L);
     }
