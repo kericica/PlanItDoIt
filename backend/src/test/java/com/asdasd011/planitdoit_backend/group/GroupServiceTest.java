@@ -1,12 +1,13 @@
 package com.asdasd011.planitdoit_backend.group;
 
+import com.asdasd011.planitdoit_backend.exception.ResourceNotFoundException;
 import com.asdasd011.planitdoit_backend.group.dto.CreateGroupRequest;
 import com.asdasd011.planitdoit_backend.group.dto.UpdateGroupRequest;
-import com.asdasd011.planitdoit_backend.user.User;
-import com.asdasd011.planitdoit_backend.user.UserRepository;
+import com.asdasd011.planitdoit_backend.sort.SortDirection;
 import com.asdasd011.planitdoit_backend.task.TaskRepository;
 import com.asdasd011.planitdoit_backend.task.TaskStatus;
-import com.asdasd011.planitdoit_backend.sort.SortDirection;
+import com.asdasd011.planitdoit_backend.user.User;
+import com.asdasd011.planitdoit_backend.user.UserRepository;
 import org.springframework.data.domain.Sort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,8 +20,10 @@ import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
@@ -240,5 +243,34 @@ class GroupServiceTest{
         assertEquals(8L,result.totalTasks());
         assertEquals(5L,result.completedTasks());
         assertEquals(new BigDecimal("62.50"),result.completionPercentage());
+    }
+
+    @Test
+    void shouldNotReturnGroupOwnedByAnotherUser(){
+        when(groupRepository.findByIdAndUserId(10L,2L)).thenReturn(Optional.empty());
+
+        GroupService groupService=new GroupService(groupRepository,userRepository,taskRepository);
+
+        assertThrows(ResourceNotFoundException.class,()->groupService.getGroupForUser(2L,10L));
+    }
+
+    @Test
+    void shouldNotUpdateGroupOwnedByAnotherUser(){
+        when(groupRepository.findByIdAndUserId(10L,2L)).thenReturn(Optional.empty());
+
+        GroupService groupService=new GroupService(groupRepository,userRepository,taskRepository);
+
+        assertThrows(ResourceNotFoundException.class,()->groupService.updateGroup(2L,10L,new UpdateGroupRequest("Hacked title")));
+    }
+
+    @Test
+    void shouldNotDeleteGroupOwnedByAnotherUser() {
+        when(groupRepository.findByIdAndUserId(10L,2L)).thenReturn(Optional.empty());
+
+        GroupService groupService=new GroupService(groupRepository,userRepository,taskRepository);
+
+        assertThrows(ResourceNotFoundException.class,()->groupService.deleteGroup(2L,10L));
+
+        verify(groupRepository,never()).delete(any(Group.class));
     }
 }

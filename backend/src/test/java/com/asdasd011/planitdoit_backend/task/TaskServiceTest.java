@@ -25,9 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 
 @ExtendWith(MockitoExtension.class)
 class TaskServiceTest{
@@ -467,5 +469,67 @@ class TaskServiceTest{
         assertEquals(0L,result.totalTasks());
         assertEquals(0L,result.completedTasks());
         assertNull(result.completionPercentage());
+    }
+
+    @Test
+    void shouldNotReturnTasksForGroupOwnedByAnotherUser() {
+        when(groupRepository.findByIdAndUserId(10L,2L)).thenReturn(Optional.empty());
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+
+        assertThrows(ResourceNotFoundException.class,()->taskService.getTasksForGroup(2L,10L,TaskSort.TITLE,SortDirection.ASC));
+
+        verify(taskRepository,never()).findByGroupId(anyLong());
+    }
+
+    @Test
+    void shouldNotReturnTaskOwnedByAnotherUser() {
+        when(groupRepository.findByIdAndUserId(10L,2L)).thenReturn(Optional.empty());
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+
+        assertThrows(ResourceNotFoundException.class,()->taskService.getTaskForGroup(2L,10L,100L));
+
+        verify(taskRepository,never()).findByIdAndGroupId(anyLong(),anyLong());
+    }
+
+    @Test
+    void shouldNotMoveTaskIntoAnotherUsersGroup(){
+        User owner=createUser();
+
+        Group currentGroup=createGroup(owner);
+        currentGroup.setId(10L);
+        currentGroup.setTitle("Mathematics");
+
+        User otherUser=new User();
+        otherUser.setId(2L);
+        otherUser.setName("Other User");
+        otherUser.setEmail("other@example.com");
+
+        Group otherGroup=createGroup(otherUser);
+        otherGroup.setId(20L);
+        otherGroup.setTitle("Physics");
+
+        Task task=createTask(currentGroup);
+        var request=new UpdateTaskRequest(
+                task.getTitle(),
+                task.getNote(),
+                task.getSolutionDifficulty(),
+                task.getTimeDifficulty(),
+                task.isHighlighted(),
+                task.getDeadline(),
+                task.getTaskStatus(),
+                20L);
+
+        when(groupRepository.findByIdAndUserId(10L,1L)).thenReturn(Optional.of(currentGroup));
+        when(taskRepository.findByIdAndGroupId(100L,10L)).thenReturn(Optional.of(task));
+        when(groupRepository.findByIdAndUserId(20L,1L)).thenReturn(Optional.empty());
+
+        TaskService taskService=new TaskService(taskRepository,groupRepository);
+
+        assertThrows(ResourceNotFoundException.class,()->taskService.updateTask(1L,10L,100L,request));
+
+        verify(taskRepository,never()).save(task);
+        assertEquals(10L,task.getGroup().getId());
     }
 }

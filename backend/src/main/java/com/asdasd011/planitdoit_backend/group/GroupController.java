@@ -1,10 +1,12 @@
 package com.asdasd011.planitdoit_backend.group;
 
-import com.asdasd011.planitdoit_backend.group.dto.GroupResponse;
 import com.asdasd011.planitdoit_backend.group.dto.CreateGroupRequest;
+import com.asdasd011.planitdoit_backend.group.dto.GroupResponse;
 import com.asdasd011.planitdoit_backend.group.dto.UpdateGroupRequest;
 import com.asdasd011.planitdoit_backend.sort.SortDirection;
+import com.asdasd011.planitdoit_backend.user.AuthenticatedUser;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,21 +19,21 @@ public class GroupController{
     public GroupController(GroupService groupService){this.groupService=groupService;}
 
     @GetMapping
-    public List<GroupResponse> getGroups(@RequestParam(defaultValue="TITLE") GroupSort sort,@RequestParam(defaultValue="ASC") SortDirection direction){
-        return groupService.getGroupsForUser(1L,sort,direction);
+    public List<GroupResponse> getGroups(@AuthenticationPrincipal AuthenticatedUser user,@RequestParam(defaultValue="TITLE") GroupSort sort,@RequestParam(defaultValue="ASC") SortDirection direction){
+        return groupService.getGroupsForUser(user.getId(),sort,direction);
     }
 
     @GetMapping("/{groupId}")
-    public GroupResponse getGroup(@PathVariable Long groupId) {return groupService.getGroupForUser(1L,groupId);}
+    public GroupResponse getGroup(@AuthenticationPrincipal AuthenticatedUser user,@PathVariable Long groupId) {return groupService.getGroupForUser(user.getId(),groupId);}
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public GroupResponse createGroup(@RequestBody CreateGroupRequest request){return groupService.createGroup(1L,request);}
+    public GroupResponse createGroup(@AuthenticationPrincipal AuthenticatedUser user,@RequestBody CreateGroupRequest request){return groupService.createGroup(user.getId(),request);}
 
     @PutMapping("/{groupId}")
-    public GroupResponse updateGroup(@PathVariable Long groupId,@RequestBody UpdateGroupRequest request){return groupService.updateGroup(1L,groupId,request);}
+    public GroupResponse updateGroup(@AuthenticationPrincipal AuthenticatedUser user,@PathVariable Long groupId,@RequestBody UpdateGroupRequest request){return groupService.updateGroup(user.getId(),groupId,request);}
 
     @DeleteMapping("/{groupId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteGroup(@PathVariable Long groupId){groupService.deleteGroup(1L,groupId);}
+    public void deleteGroup(@AuthenticationPrincipal AuthenticatedUser user,@PathVariable Long groupId){groupService.deleteGroup(user.getId(),groupId);}
 }

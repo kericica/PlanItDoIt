@@ -7,13 +7,15 @@ import com.asdasd011.planitdoit_backend.task.dto.UpdateTaskRequest;
 import com.asdasd011.planitdoit_backend.task.dto.CompletionProgress;
 import com.asdasd011.planitdoit_backend.task.dto.TaskCompletionSummaryResponse;
 import com.asdasd011.planitdoit_backend.sort.SortDirection;
+import com.asdasd011.planitdoit_backend.user.AuthenticatedUser;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -36,7 +38,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 @WebMvcTest(TaskController.class)
-@WithMockUser(username="test@example.com",roles="USER")
 class TaskControllerTest {
     @Autowired
     private MockMvc mockMvc;
@@ -44,12 +45,22 @@ class TaskControllerTest {
     @MockitoBean
     private TaskService taskService;
 
+    private AuthenticatedUser authenticatedUser(){
+        return new AuthenticatedUser(
+            42L,
+            "Test User",
+            "test@example.com",
+            "encoded-password",
+            List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+    }
+
     @Test
     void shouldReturnTasksForGroup()throws Exception{
-        when(taskService.getTasksForGroup(1L,10L,TaskSort.TITLE,SortDirection.ASC)).thenReturn(List.of(new TaskResponse(100L,"TaskTitle0","exercises 1-10",
+        when(taskService.getTasksForGroup(42L,10L,TaskSort.TITLE,SortDirection.ASC)).thenReturn(List.of(new TaskResponse(100L,"TaskTitle0","exercises 1-10",
             SolutionDifficulty.MID,TimeDifficulty.MID,true,null,TaskStatus.TODO,null,null,10L)));
 
-        mockMvc.perform(get("/api/groups/10/tasks")).andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/groups/10/tasks").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser()))).andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$[0].id").value(100)).andExpect(jsonPath("$[0].title").value("TaskTitle0")).andExpect(jsonPath("$[0].note").value("exercises 1-10"))
             .andExpect(jsonPath("$[0].solutionDifficulty").value("MID")).andExpect(jsonPath("$[0].timeDifficulty").value("MID")).andExpect(jsonPath("$[0].highlighted").value(true))
             .andExpect(jsonPath("$[0].taskStatus").value("TODO")).andExpect(jsonPath("$[0].groupId").value(10));
@@ -57,21 +68,21 @@ class TaskControllerTest {
 
     @Test
     void shouldReturnOneTask()throws Exception{
-        when(taskService.getTaskForGroup(1L,10L,100L)).thenReturn(new TaskResponse(100L,"TaskTitle0","exercises 1-10",SolutionDifficulty.MID,TimeDifficulty.MID,
+        when(taskService.getTaskForGroup(42L,10L,100L)).thenReturn(new TaskResponse(100L,"TaskTitle0","exercises 1-10",SolutionDifficulty.MID,TimeDifficulty.MID,
             true,null,TaskStatus.TODO,null,null,10L));
 
-        mockMvc.perform(get("/api/groups/10/tasks/100")).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(100)).andExpect(jsonPath("$.title").value("TaskTitle0"))
+        mockMvc.perform(get("/api/groups/10/tasks/100").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser()))).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(100)).andExpect(jsonPath("$.title").value("TaskTitle0"))
             .andExpect(jsonPath("$.note").value("exercises 1-10")).andExpect(jsonPath("$.solutionDifficulty").value("MID")).andExpect(jsonPath("$.timeDifficulty").value("MID"))
             .andExpect(jsonPath("$.highlighted").value(true)).andExpect(jsonPath("$.taskStatus").value("TODO")).andExpect(jsonPath("$.groupId").value(10));
     }
 
     @Test
     void shouldCreateTask()throws Exception{
-        when(taskService.createTask(1L,10L,new CreateTaskRequest("TaskTitle0","exercises 1-10",SolutionDifficulty.MID,TimeDifficulty.MID,true,null,
+        when(taskService.createTask(42L,10L,new CreateTaskRequest("TaskTitle0","exercises 1-10",SolutionDifficulty.MID,TimeDifficulty.MID,true,null,
             TaskStatus.TODO,10L))).thenReturn(new TaskResponse(100L,"TaskTitle0","exercises 1-10",SolutionDifficulty.MID,TimeDifficulty.MID,true,null,
             TaskStatus.TODO,null,null,10L));
 
-        mockMvc.perform(post("/api/groups/10/tasks").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(post("/api/groups/10/tasks").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser())).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
             {
                 "title": "TaskTitle0",
                 "note": "exercises 1-10",
@@ -86,11 +97,11 @@ class TaskControllerTest {
 
     @Test
     void shouldUpdateTask()throws Exception{
-        when(taskService.updateTask(1L,10L,100L,new UpdateTaskRequest("TaskTitle1","exercises 11-20",SolutionDifficulty.HARD,TimeDifficulty.LOT,false,null,
+        when(taskService.updateTask(42L,10L,100L,new UpdateTaskRequest("TaskTitle1","exercises 11-20",SolutionDifficulty.HARD,TimeDifficulty.LOT,false,null,
             TaskStatus.IN_PROGRESS,10L))).thenReturn(new TaskResponse(100L,"TaskTitle1","exercises 11-20",SolutionDifficulty.HARD,TimeDifficulty.LOT,false,null,
             TaskStatus.IN_PROGRESS,null,null,10L));
 
-        mockMvc.perform(put("/api/groups/10/tasks/100").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(put("/api/groups/10/tasks/100").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser())).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
             {
                 "title": "TaskTitle1",
                 "note": "exercises 11-20",
@@ -106,10 +117,10 @@ class TaskControllerTest {
 
     @Test
     void shouldMoveTaskToAnotherGroup()throws Exception{
-        when(taskService.updateTask(eq(1L),eq(10L),eq(100L),any(UpdateTaskRequest.class))).thenReturn(new TaskResponse(100L,"Solve equations","Exercises 1-10",
+        when(taskService.updateTask(eq(42L),eq(10L),eq(100L),any(UpdateTaskRequest.class))).thenReturn(new TaskResponse(100L,"Solve equations","Exercises 1-10",
             SolutionDifficulty.MID,TimeDifficulty.MID,true,null,TaskStatus.TODO,null,null,20L));
 
-        mockMvc.perform(put("/api/groups/10/tasks/100").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(put("/api/groups/10/tasks/100").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser())).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
             {
                 "title": "Solve equations",
                 "note": "Exercises 1-10",
@@ -121,18 +132,18 @@ class TaskControllerTest {
             }
             """)).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(100)).andExpect(jsonPath("$.groupId").value(20));
 
-        verify(taskService).updateTask(eq(1L),eq(10L),eq(100L),argThat(request->request.groupId().equals(20L)&& request.title().equals("Solve equations")));
+        verify(taskService).updateTask(eq(42L),eq(10L),eq(100L),argThat(request->request.groupId().equals(20L)&& request.title().equals("Solve equations")));
     }
 
     @Test
     void shouldCreateCompletedTaskWithCompletedAt()throws Exception{
         Instant completedAt=Instant.parse("2026-09-24T10:00:00Z");
 
-        when(taskService.createTask(1L,10L,new CreateTaskRequest("StatusTest TaskTitle","completed status-time con",SolutionDifficulty.HARD,TimeDifficulty.LOT,true,null,
+        when(taskService.createTask(42L,10L,new CreateTaskRequest("StatusTest TaskTitle","completed status-time con",SolutionDifficulty.HARD,TimeDifficulty.LOT,true,null,
             TaskStatus.COMPLETED,10L))).thenReturn(new TaskResponse(100L,"StatusTest TaskTitle","completed status-time con",SolutionDifficulty.HARD,TimeDifficulty.LOT,true,null,
             TaskStatus.COMPLETED,null,completedAt,10L));
 
-        mockMvc.perform(post("/api/groups/10/tasks").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(post("/api/groups/10/tasks").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser())).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
             {
                 "title": "StatusTest TaskTitle",
                 "note": "completed status-time con",
@@ -147,11 +158,11 @@ class TaskControllerTest {
 
     @Test
     void shouldClearCompletedAtWhenTaskIsNoLongerCompleted()throws Exception{
-        when(taskService.updateTask(1L,10L,100L,new UpdateTaskRequest("UpdatedStatus TaskTitle","updated note",SolutionDifficulty.MID,TimeDifficulty.MID,false,null,
+        when(taskService.updateTask(42L,10L,100L,new UpdateTaskRequest("UpdatedStatus TaskTitle","updated note",SolutionDifficulty.MID,TimeDifficulty.MID,false,null,
             TaskStatus.IN_PROGRESS,10L))).thenReturn(new TaskResponse(100L,"UpdatedStatus TaskTitle","updated note",SolutionDifficulty.MID,TimeDifficulty.MID,false,null,
             TaskStatus.IN_PROGRESS,null,null,10L));
 
-        mockMvc.perform(put("/api/groups/10/tasks/100").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
+        mockMvc.perform(put("/api/groups/10/tasks/100").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser())).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
             {
                 "title": "UpdatedStatus TaskTitle",
                 "note": "updated note",
@@ -166,34 +177,38 @@ class TaskControllerTest {
 
     @Test
     void shouldDeleteTask()throws Exception{
-        doNothing().when(taskService).deleteTask(1L,10L,100L);
+        doNothing().when(taskService).deleteTask(42L,10L,100L);
 
-        mockMvc.perform(delete("/api/groups/10/tasks/100").with(csrf())).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/groups/10/tasks/100").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser())).with(csrf())).andExpect(status().isNoContent());
 
-        verify(taskService).deleteTask(1L,10L,100L);
+        verify(taskService).deleteTask(42L,10L,100L);
     }
 
     @Test
     void shouldReturnNotFoundWhenGroupDoesNotBelongToUser()throws Exception{
-        when(taskService.getTasksForGroup(1L,10L,TaskSort.TITLE,SortDirection.ASC)).thenThrow(new ResourceNotFoundException("group not found"));
+        when(taskService.getTasksForGroup(42L,10L,TaskSort.TITLE,SortDirection.ASC)).thenThrow(new ResourceNotFoundException("group not found"));
 
-        mockMvc.perform(get("/api/groups/10/tasks")).andExpect(status().isNotFound()).andExpect(jsonPath("$.status").value(404)).andExpect(jsonPath("$.message").value("group not found"));
+        mockMvc.perform(get("/api/groups/10/tasks").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser()))).andExpect(status().isNotFound()).andExpect(jsonPath("$.status").value(404))
+            .andExpect(jsonPath("$.message").value("group not found")
+        );
     }
 
     @Test
     void shouldReturnNotFoundWhenTaskDoesNotExist()throws Exception{
-        when(taskService.getTaskForGroup(1L,10L,100L)).thenThrow(new ResourceNotFoundException("task not found"));
+        when(taskService.getTaskForGroup(42L,10L,100L)).thenThrow(new ResourceNotFoundException("task not found"));
 
-        mockMvc.perform(get("/api/groups/10/tasks/100")).andExpect(status().isNotFound()).andExpect(jsonPath("$.status").value(404)).andExpect(jsonPath("$.message").value("task not found"));
+        mockMvc.perform(get("/api/groups/10/tasks/100").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser()))).andExpect(status().isNotFound()).andExpect(jsonPath("$.status").value(404))
+            .andExpect(jsonPath("$.message").value("task not found")
+        );
     }
 
     @Test
     void shouldSortTasksBySolutionDifficultyDescending()throws Exception{
-        when(taskService.getTasksForGroup(1L,10L,TaskSort.SOLUTION_DIFFICULTY,SortDirection.DESC)).thenReturn(List.of(
+        when(taskService.getTasksForGroup(42L,10L,TaskSort.SOLUTION_DIFFICULTY,SortDirection.DESC)).thenReturn(List.of(
             new TaskResponse(200L,"Hard task",null,SolutionDifficulty.HARD,TimeDifficulty.MID,false,null,TaskStatus.TODO,null,null,10L),
             new TaskResponse(100L, "Easy task",null,SolutionDifficulty.EASY,TimeDifficulty.MID,false,null,TaskStatus.TODO,null,null,10L)));
 
-        mockMvc.perform(get("/api/groups/10/tasks").param("sort","SOLUTION_DIFFICULTY").param("direction","DESC")).andExpect(status().isOk())
+        mockMvc.perform(get("/api/groups/10/tasks").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser())).param("sort","SOLUTION_DIFFICULTY").param("direction","DESC")).andExpect(status().isOk())
             .andExpect(jsonPath("$[0].title").value("Hard task")).andExpect(jsonPath("$[1].title").value("Easy task"));
     }
 
@@ -202,11 +217,10 @@ class TaskControllerTest {
         var summary=new TaskCompletionSummaryResponse(new CompletionProgress(15,9,new BigDecimal("60.00")),Map.of(TimeDifficulty.FLASH,new CompletionProgress(6,3,new BigDecimal("50.00")),
             TimeDifficulty.MID,new CompletionProgress(5,4,new BigDecimal("80.00")),TimeDifficulty.LOT,new CompletionProgress(4,2,new BigDecimal("50.00"))));
 
-        when(taskService.getCompletionSummary(1L,10L)).thenReturn(summary);
+        when(taskService.getCompletionSummary(42L,10L)).thenReturn(summary);
 
-        mockMvc.perform(get("/api/groups/10/tasks/summary"))
-            .andExpect(status().isOk())
-            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/groups/10/tasks/summary").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser())))
+            .andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.overall.totalTasks").value(15))
             .andExpect(jsonPath("$.overall.completedTasks").value(9))
             .andExpect(jsonPath("$.overall.percentage").value(60.00))
@@ -222,15 +236,19 @@ class TaskControllerTest {
         var emptyProgress=new CompletionProgress(0,0,null);
         var summary=new TaskCompletionSummaryResponse(emptyProgress,Map.of(TimeDifficulty.FLASH, emptyProgress,TimeDifficulty.MID, emptyProgress,TimeDifficulty.LOT,emptyProgress));
 
-        when(taskService.getCompletionSummary(1L,10L)).thenReturn(summary);
+        when(taskService.getCompletionSummary(42L,10L)).thenReturn(summary);
 
-        mockMvc.perform(get("/api/groups/10/tasks/summary"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.overall.totalTasks").value(0))
+        mockMvc.perform(get("/api/groups/10/tasks/summary").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.overall.totalTasks").value(0))
                 .andExpect(jsonPath("$.overall.completedTasks").value(0))
                 .andExpect(jsonPath("$.overall.percentage").doesNotExist())
                 .andExpect(jsonPath("$.byTimeDifficulty.FLASH.percentage").doesNotExist())
                 .andExpect(jsonPath("$.byTimeDifficulty.MID.percentage").doesNotExist())
                 .andExpect(jsonPath("$.byTimeDifficulty.LOT.percentage").doesNotExist());
+    }
+
+    @Test
+    void shouldRejectUnauthenticatedUser() throws Exception {
+        mockMvc.perform(get("/api/groups/10/tasks")).andExpect(status().isUnauthorized());
     }
 }
