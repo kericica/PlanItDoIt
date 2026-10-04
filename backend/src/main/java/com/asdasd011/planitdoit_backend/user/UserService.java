@@ -1,7 +1,9 @@
 package com.asdasd011.planitdoit_backend.user;
 
+import com.asdasd011.planitdoit_backend.exception.InvalidCurrentPasswordException;
 import com.asdasd011.planitdoit_backend.exception.ResourceAlreadyExistsException;
 import com.asdasd011.planitdoit_backend.exception.ResourceNotFoundException;
+import com.asdasd011.planitdoit_backend.user.dto.ChangePasswordRequest;
 import com.asdasd011.planitdoit_backend.user.dto.CreateUserRequest;
 import com.asdasd011.planitdoit_backend.user.dto.UpdateUserRequest;
 import com.asdasd011.planitdoit_backend.user.dto.UserResponse;
@@ -43,6 +45,14 @@ public class UserService{
         user.setEmail(request.email());
         User savedUser=userRepository.save(user);
         return toResponse(savedUser);
+    }
+
+    public void changePassword(Long userId,ChangePasswordRequest request){
+        User user=userRepository.findById(userId).orElseThrow(()->new ResourceNotFoundException("user not found"));
+        if(!passwordEncoder.matches(request.currentPassword(),user.getPasswordHash()))throw new InvalidCurrentPasswordException("incorrect password");
+        String newPasswordHash=passwordEncoder.encode(request.newPassword());
+        user.setPasswordHash(newPasswordHash);
+        userRepository.save(user);
     }
 
     private UserResponse toResponse(User user){

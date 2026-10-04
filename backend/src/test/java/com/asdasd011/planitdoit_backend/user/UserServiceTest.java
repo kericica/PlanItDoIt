@@ -1,6 +1,8 @@
 package com.asdasd011.planitdoit_backend.user;
 
+import com.asdasd011.planitdoit_backend.exception.InvalidCurrentPasswordException;
 import com.asdasd011.planitdoit_backend.exception.ResourceAlreadyExistsException;
+import com.asdasd011.planitdoit_backend.user.dto.ChangePasswordRequest;
 import com.asdasd011.planitdoit_backend.user.dto.CreateUserRequest;
 import com.asdasd011.planitdoit_backend.user.dto.UpdateUserRequest;
 import com.asdasd011.planitdoit_backend.user.dto.UserResponse;
@@ -163,4 +165,45 @@ class UserServiceTest{
 
         verify(userRepository,never()).save(any());
     }
+
+    @Test
+    void shouldChangePassword(){
+        User user=new User();
+        user.setId(42L);
+        user.setName("Alice");
+        user.setEmail("alice@example.com");
+        user.setPasswordHash("old-encoded-password");
+
+        when(userRepository.findById(42L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("oldpassword","old-encoded-password")).thenReturn(true);
+        when(passwordEncoder.encode("newpassword")).thenReturn("new-encoded-password");
+
+        UserService userService=new UserService(userRepository,passwordEncoder);
+        userService.changePassword(42L,new ChangePasswordRequest("oldpassword","newpassword"));
+
+        assertEquals("new-encoded-password",user.getPasswordHash());
+
+        verify(passwordEncoder).matches("oldpassword","old-encoded-password");
+        verify(passwordEncoder).encode("newpassword");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void shouldRejectIncorrectCurrentPassword(){
+        User user=new User();
+        user.setId(42L);
+        user.setPasswordHash("old-encoded-password");
+
+        when(userRepository.findById(42L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrongpassword","old-encoded-password")).thenReturn(false);
+
+        UserService userService=new UserService(userRepository,passwordEncoder);
+
+        assertThrows(InvalidCurrentPasswordException.class,()->userService.changePassword(42L,new ChangePasswordRequest("wrongpassword","newpassword")));
+
+        verify(passwordEncoder,never()).encode(any());
+        verify(userRepository,never()).save(any());
+    }
+
+
 }

@@ -1,11 +1,13 @@
 package com.asdasd011.planitdoit_backend.user;
 
+import com.asdasd011.planitdoit_backend.user.dto.ChangePasswordRequest;
 import com.asdasd011.planitdoit_backend.user.dto.UpdateUserRequest;
 import com.asdasd011.planitdoit_backend.user.dto.UserResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -13,6 +15,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -101,5 +106,52 @@ class UserControllerTest{
             }
             """)).andExpect(status().isUnauthorized()
         );
+    }
+
+    @Test
+    void shouldChangePasswordForAuthenticatedUserAndInvalidateSession()throws Exception{
+        MockHttpSession session=new MockHttpSession();
+
+        ChangePasswordRequest request=new ChangePasswordRequest("oldpassword","newpassword");
+
+        mockMvc.perform(put("/api/users/me/password").session(session).with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser()))
+            .with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
+            {
+            "currentPassword": "oldpassword",
+            "newPassword": "newpassword"
+            }
+            """)).andExpect(status().isNoContent()
+        );
+
+        verify(userService).changePassword(42L,request);
+
+        assertTrue(session.isInvalid());
+    }
+
+    @Test
+    void shouldRejectInvalidNewPassword()throws Exception{
+
+        mockMvc.perform(put("/api/users/me/password").with(SecurityMockMvcRequestPostProcessors.user(authenticatedUser())).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                "currentPassword": "oldpassword",
+                "newPassword": "short"
+                }
+                """)).andExpect(status().isBadRequest()).andExpect(jsonPath("$.status").value(400)).andExpect(jsonPath("$.message").value("Validation failed")
+            );
+
+        verify(userService,never()).changePassword(any(),any());
+    }
+
+    @Test
+    void shouldRejectUnauthenticatedPasswordChange()throws Exception{
+        mockMvc.perform(put("/api/users/me/password").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
+            {
+            "currentPassword": "oldpassword",
+            "newPassword": "newpassword"
+            }
+            """)).andExpect(status().isUnauthorized()
+        );
+
+        verify(userService,never()).changePassword(any(),any());
     }
 }

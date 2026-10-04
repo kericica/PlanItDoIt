@@ -41,5 +41,10 @@ public class GlobalExceptionHandler{
         ApiErrorResponse response=new ApiErrorResponse(HttpStatus.UNAUTHORIZED.value(),"Invalid email or password",Instant.now());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
-
+    
+    @ExceptionHandler(InvalidCurrentPasswordException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidCurrentPassword(InvalidCurrentPasswordException exception){
+        ApiErrorResponse response=new ApiErrorResponse(HttpStatus.BAD_REQUEST.value(),exception.getMessage(),Instant.now());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
 }
