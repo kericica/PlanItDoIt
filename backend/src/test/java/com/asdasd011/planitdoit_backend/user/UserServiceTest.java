@@ -2,6 +2,7 @@ package com.asdasd011.planitdoit_backend.user;
 
 import com.asdasd011.planitdoit_backend.exception.ResourceAlreadyExistsException;
 import com.asdasd011.planitdoit_backend.user.dto.CreateUserRequest;
+import com.asdasd011.planitdoit_backend.user.dto.UpdateUserRequest;
 import com.asdasd011.planitdoit_backend.user.dto.UserResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -100,5 +101,66 @@ class UserServiceTest{
             savedUser.getName(),
             savedUser.getEmail()
         ));
+    }
+
+    @Test
+    void shouldGetUserProfile(){
+        User user=new User();
+        user.setId(42L);
+        user.setName("Alice");
+        user.setEmail("alice@example.com");
+
+        when(userRepository.findById(42L)).thenReturn(Optional.of(user));
+
+        UserService userService=new UserService(userRepository, passwordEncoder);
+        UserResponse result=userService.getUser(42L);
+
+        assertEquals(42L,result.id());
+        assertEquals("Alice",result.name());
+        assertEquals("alice@example.com",result.email());
+    }
+
+    @Test
+    void shouldUpdateUserProfile(){
+        User user=new User();
+        user.setId(42L);
+        user.setName("Alice");
+        user.setEmail("alice@example.com");
+        user.setPasswordHash("existing-password-hash");
+
+        UpdateUserRequest request=new UpdateUserRequest("Alice Updated","updated@example.com");
+        
+        when(userRepository.findById(42L)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail("updated@example.com")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenAnswer(invocation->invocation.getArgument(0));
+
+        UserService userService=new UserService(userRepository,passwordEncoder);
+        UserResponse result=userService.updateUser(42L,request);
+
+        assertEquals("Alice Updated",result.name());
+        assertEquals("updated@example.com",result.email());
+        assertEquals("existing-password-hash",user.getPasswordHash());
+
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void shouldRejectProfileUpdateWhenEmailBelongsToAnotherUser(){
+        User currentUser=new User();
+        currentUser.setId(42L);
+        currentUser.setEmail("alice@example.com");
+
+        User anotherUser=new User();
+        anotherUser.setId(99L);
+        anotherUser.setEmail("taken@example.com");
+
+        when(userRepository.findById(42L)).thenReturn(Optional.of(currentUser));
+        when(userRepository.findByEmail("taken@example.com")).thenReturn(Optional.of(anotherUser));
+
+        UserService userService=new UserService(userRepository,passwordEncoder);
+
+        assertThrows(ResourceAlreadyExistsException.class,()->userService.updateUser(42L,new UpdateUserRequest("Alice","taken@example.com")));
+
+        verify(userRepository,never()).save(any());
     }
 }
