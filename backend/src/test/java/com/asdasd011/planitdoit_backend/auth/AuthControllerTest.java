@@ -1,9 +1,7 @@
 package com.asdasd011.planitdoit_backend.auth;
 
 import com.asdasd011.planitdoit_backend.config.SecurityConfig;
-import org.springframework.context.annotation.Import;
 import com.asdasd011.planitdoit_backend.user.SecurityUserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import com.asdasd011.planitdoit_backend.exception.ResourceAlreadyExistsException;
 import com.asdasd011.planitdoit_backend.user.AuthenticatedUser;
 import com.asdasd011.planitdoit_backend.user.dto.UserResponse;
@@ -11,11 +9,14 @@ import com.asdasd011.planitdoit_backend.user.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -23,6 +24,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
@@ -141,5 +143,43 @@ class AuthControllerTest{
                 "email": "not-an-email",
                 "password": ""
             }""")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.status").value(400)).andExpect(jsonPath("$.message").value("Validation failed"));
+    }
+
+    @Test
+    void loginWithWrongPasswordReturnsUnauthorized()throws Exception{
+        when(authenticationManager.authenticate(any(Authentication.class))).thenThrow(new BadCredentialsException("Bad credentials"));
+
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content("""
+            {
+            "email": "alice@example.com",
+            "password": "wrongpassword"
+            }
+            """)).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.status").value(401)).andExpect(jsonPath("$.message").value("Invalid email or password"));
+    }
+
+    @Test
+    void loginWithUnknownEmailReturnsUnauthorized()throws Exception{
+        when(authenticationManager.authenticate(any(Authentication.class))).thenThrow(new BadCredentialsException("Bad credentials"));
+
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content("""
+            {
+            "email": "unknown@example.com",
+            "password": "somepassword"
+            }
+            """)).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.status").value(401)).andExpect(jsonPath("$.message").value("Invalid email or password")
+        );
+    }
+
+    @Test
+    void loginWithInvalidRequestReturnsBadRequest()throws Exception{
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content("""
+            {
+            "email": "not-an-email",
+            "password": ""
+            }
+            """)).andExpect(status().isBadRequest()).andExpect(jsonPath("$.status").value(400)).andExpect(jsonPath("$.message").value("Validation failed")
+        );
+
+        verify(authenticationManager,never()).authenticate(any(Authentication.class));
     }
 }
