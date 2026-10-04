@@ -5,12 +5,14 @@ import com.asdasd011.planitdoit_backend.user.dto.CreateUserRequest;
 import com.asdasd011.planitdoit_backend.user.dto.UserResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -67,5 +69,36 @@ class UserServiceTest{
 
         verify(passwordEncoder,never()).encode(any());
         verify(userRepository,never()).save(any());
+    }
+
+    @Test
+    void registerHashesPasswordBeforeSaving(){
+        CreateUserRequest request=new CreateUserRequest(
+            "Alice",
+            "alice@example.com",
+            "secret123"
+        );
+
+        when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("secret123")).thenReturn("encoded-password");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserService userService=new UserService(userRepository,passwordEncoder);
+        UserResponse response=userService.register(request);
+        ArgumentCaptor<User> captor=ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+
+        User savedUser=captor.getValue();
+
+        assertThat(savedUser.getPasswordHash()).isEqualTo("encoded-password");
+        assertThat(savedUser.getPasswordHash()).isNotEqualTo("secret123");
+
+        verify(passwordEncoder).encode("secret123");
+
+        assertThat(response).isEqualTo(new UserResponse(
+            savedUser.getId(),
+            savedUser.getName(),
+            savedUser.getEmail()
+        ));
     }
 }
