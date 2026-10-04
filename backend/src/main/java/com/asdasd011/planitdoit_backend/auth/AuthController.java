@@ -13,6 +13,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,11 +23,14 @@ public class AuthController{
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
+    private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
 
-    public AuthController(UserService userService,AuthenticationManager authenticationManager,SecurityContextRepository securityContextRepository){
+    public AuthController(UserService userService,AuthenticationManager authenticationManager,SecurityContextRepository securityContextRepository,
+        SessionAuthenticationStrategy sessionAuthenticationStrategy){
         this.userService=userService;
         this.authenticationManager=authenticationManager;
         this.securityContextRepository=securityContextRepository;
+        this.sessionAuthenticationStrategy=sessionAuthenticationStrategy;
     }
 
     @PostMapping("/register")

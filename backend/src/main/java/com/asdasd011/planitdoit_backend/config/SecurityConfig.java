@@ -2,6 +2,9 @@ package com.asdasd011.planitdoit_backend.config;
 
 import com.asdasd011.planitdoit_backend.user.SecurityUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.beans.BeanProperty;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -11,6 +14,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.SecurityFilterChain;
@@ -33,8 +38,8 @@ public class SecurityConfig{
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,SecurityContextRepository securityContextRepository)throws Exception{
         http.csrf(csrf->csrf.disable()).securityContext(securityContext->securityContext.securityContextRepository(securityContextRepository))
-            .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-            .authorizeHttpRequests(authorize->authorize.requestMatchers(
+            .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).sessionFixation(sessionFixation->
+            sessionFixation.changeSessionId())).authorizeHttpRequests(authorize->authorize.requestMatchers(
                 "/api/auth/register",
                 "/api/auth/login",
                 "/swagger-ui/**",
@@ -48,4 +53,7 @@ public class SecurityConfig{
 
     @Bean
     public SecurityContextRepository securityContextRepository(){return new HttpSessionSecurityContextRepository();}
+
+    @Bean
+    public SessionAuthenticationStrategy sessionAuthenticationStrategy(){return new ChangeSessionIdAuthenticationStrategy();}
 }
