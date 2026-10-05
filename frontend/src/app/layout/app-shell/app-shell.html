@@ -1,0 +1,10 @@
+<div class="app-shell">
+    <header class="app-header">
+        <a class="app-logo" routerLink="/groups">PlanItDoIt</a>
+        <nav class="main-navigation" aria-label="Main navigation">
+            <a class="navigation-link" routerLink="/groups" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" ariaCurrentWhenActive="page">Groups</a>
+            <a class="navigation-link" routerLink="/profile" routerLinkActive="active" ariaCurrentWhenActive="page">Profile</a>
+        </nav>
+    </header>
+    <main class="app-content"><router-outlet /></main>
+</div>
