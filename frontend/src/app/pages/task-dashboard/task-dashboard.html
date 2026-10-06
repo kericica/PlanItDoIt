@@ -3,22 +3,11 @@
         <h1>groupTitle</h1>
         <button class="task-dashboard-universal-new-task-button">new task</button>
     </header>
-    <div class="task-dashboard-groups-navigation">
-        <a class="navigation-link" routerLink="/groups" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" ariaCurrentWhenActive="page">Groups</a>
-        <ul class="task-dashboard-navigation-groups"></ul>
-    </div>
+    <aside class="group-navigation">
+        <a class="navigation-link" routerLink="/groups" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">
+            categories
+        </a>
+    </aside>
     <div class="task-dashboard-content">
-        <div class="task-dashboard-task-container frog">
-            <ul class="task-dashboard-tasks"></ul>
-            <div class="task-dashboard-task add">+</div>
-        </div>
-        <div class="task-dashboard-task-container energy">
-            <ul class="task-dashboard-tasks"></ul>
-            <div class="task-dashboard-task add">+</div>
-        </div>
-        <div class="task-dashboard-task-container flash">
-            <ul class="task-dashboard-tasks"></ul>
-            <div class="task-dashboard-task add">+</div>
-        </div>
     </div>
 </section>

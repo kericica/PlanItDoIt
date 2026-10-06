@@ -3,7 +3,6 @@ import { Routes } from '@angular/router';
 import{AppShell}from './layout/app-shell/app-shell';
 import{Groups}from './pages/groups/groups';
 import{TaskDashboard}from './pages/task-dashboard/task-dashboard';
-import{Profile}from './pages/profile/profile';
 
 export const routes:Routes=[
     {
@@ -22,10 +21,6 @@ export const routes:Routes=[
             {
                 path: 'groups/:groupId/tasks',
                 component: TaskDashboard
-            },
-            {
-                path: 'profile',
-                component: Profile
             }
         ]
     },
