@@ -1,0 +1,91 @@
+.groups-page{
+    min-height:100vh;
+    background-color: #fff;
+}
+
+.page-header{
+    text-align: center;
+    padding: 1%;
+}
+
+.page-header h1{
+    margin: 0;
+    text-transform: uppercase;
+    text-indent: 3px;
+    font-family:fantasy;
+    letter-spacing: 40%;
+    color: #000;
+}
+
+.groups-content{
+    padding: 5vh;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2vh;
+}
+
+.groups-item{
+    position: relative;
+    padding: 2vh 0.9vh;
+    min-width: 0;
+    width: 40vh;
+    height: 20vh;
+    border: #000, solid, 0.5vh;
+}
+
+.groups-item-title{
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    container-type: inline-size;
+}
+
+.groups-item-title span {
+    display: inline-block;
+    max-width: 95%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: 4vh;
+}
+
+.groups-item-title:hover span {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+
+    animation: scroll-title 5s ease-in-out infinite alternate;
+}
+
+@keyframes scroll-title {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(calc(-100% + 100cqw));
+    }
+}
+
+.groups-item-progress-status{
+    position: absolute;
+    bottom: 0;
+}
+
+.groups-item:hover{
+    cursor: pointer;
+}
+
+.add{
+    display: grid;
+    place-items: center;
+    font-family: fantasy;
+    font-size: 10vh;
+    transition: font-size 0.25s ease;
+}
+
+.add:hover{
+    font-size: 12vh;
+}

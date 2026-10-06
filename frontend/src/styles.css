@@ -1,1 +1,62 @@
-/* You can add global styles to this file, and also import other style files */
+body{
+    height: 100vh;
+    margin: 0;
+}
+
+.profil {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+
+  width: 20vh;
+  height: 6vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: white;
+
+  /* Top of the trapezoid */
+  border-top: 0.6vh solid #000;
+
+  z-index: 1000;
+}
+
+/* Left slanted side */
+.profil::before {
+  content: "";
+  position: absolute;
+
+  left: -0.1px;
+  top: -3px;
+
+  width: 0.6vh;
+  height: 62px;
+
+  background: #000;
+  transform: skewX(-14deg);
+  transform-origin: top;
+}
+
+/* Right slanted side */
+.profil::after {
+  content: "";
+  position: absolute;
+
+  right: -0.8px;
+  top: -3px;
+
+  width: 0.6vh;
+  height: 62px;
+
+  background: #000;
+  transform: skewX(14deg);
+  transform-origin: top;
+}
+
+.profil .navigation-link {
+  text-decoration: none;
+  color: inherit;
+}
